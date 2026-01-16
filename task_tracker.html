@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apex | Enterprise Task Architect</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root { --primary: #6366f1; --bg: #0b0f1a; --card: #161b2c; --sidebar: #111827; --text: #f3f4f6; }
+        * { margin:0; padding:0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { display: flex; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; }
+
+        /* Navigation Sidebar */
+        nav { width: 280px; background: var(--sidebar); border-right: 1px solid rgba(255,255,255,0.05); padding: 40px 24px; display: flex; flex-direction: column; }
+        .brand { font-size: 24px; font-weight: 700; color: white; display: flex; align-items: center; gap: 12px; margin-bottom: 50px; }
+        .brand i { color: var(--primary); }
+        .nav-item { padding: 14px 18px; border-radius: 12px; color: #9ca3af; cursor: pointer; transition: 0.3s; margin-bottom: 10px; list-style: none; display: flex; align-items: center; gap: 15px; }
+        .nav-item:hover, .nav-item.active { background: rgba(99, 102, 241, 0.1); color: var(--primary); }
+
+        /* Main Workspace */
+        main { flex: 1; padding: 60px; overflow-y: auto; background: radial-gradient(at top right, #1e1b4b, #0b0f1a); }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 50px; }
+        .header h2 { font-size: 32px; font-weight: 700; letter-spacing: -0.5px; }
+        
+        /* Dashboard Cards */
+        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-bottom: 50px; }
+        .card { background: var(--card); padding: 28px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); }
+        .card h4 { color: #9ca3af; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+        .card .val { font-size: 32px; font-weight: 700; color: white; }
+
+        /* Task Logic Style */
+        .input-section { background: rgba(255,255,255,0.03); padding: 8px; border-radius: 18px; border: 1px solid rgba(255,255,255,0.1); display: flex; gap: 10px; margin-bottom: 30px; }
+        input { flex: 1; background: transparent; border: none; padding: 15px; color: white; outline: none; font-size: 16px; }
+        .priority-select { background: #1f2937; color: white; border: none; padding: 0 15px; border-radius: 12px; }
+        .btn-action { background: var(--primary); color: white; border: none; padding: 0 30px; border-radius: 14px; font-weight: 600; cursor: pointer; transition: 0.3s; }
+        .btn-action:hover { box-shadow: 0 0 20px rgba(99, 102, 241, 0.4); transform: translateY(-2px); }
+
+        /* List Items */
+        .task-row { background: var(--card); padding: 20px; border-radius: 16px; margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between; border: 1px solid rgba(255,255,255,0.03); animation: slideUp 0.4s ease; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } }
+        .task-left { display: flex; align-items: center; gap: 20px; }
+        .check-box { width: 24px; height: 24px; border: 2px solid #374151; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.3s; }
+        .check-box.done { background: var(--primary); border-color: var(--primary); }
+        .task-text.done { text-decoration: line-through; color: #6b7280; }
+        .badge { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+        .high { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+    </style>
+</head>
+<body>
+
+<nav>
+    <div class="brand"><i class="fa-solid fa-cube"></i> APEX PRO</div>
+    <ul class="nav-links">
+        <li class="nav-item active"><i class="fa-solid fa-house"></i> Overview</li>
+        <li class="nav-item"><i class="fa-solid fa-layer-group"></i> Projects</li>
+        <li class="nav-item"><i class="fa-solid fa-chart-pie"></i> Performance</li>
+    </ul>
+</nav>
+
+<main>
+    <div class="header">
+        <h2>Control Center</h2>
+        <div id="date">January 2026</div>
+    </div>
+
+    <div class="grid">
+        <div class="card"><h4>Active Projects</h4><div class="val" id="totalTasks">0</div></div>
+        <div class="card"><h4>Completion Rate</h4><div class="val" id="rate">0%</div></div>
+        <div class="card"><h4>Priority Items</h4><div class="val" id="highCount">0</div></div>
+    </div>
+
+    <div class="input-section">
+        <input type="text" id="taskInput" placeholder="Initialize new objective...">
+        <select id="priority" class="priority-select">
+            <option value="high">High</option>
+            <option value="med">Medium</option>
+        </select>
+        <button class="btn-action" onclick="addTask()">DEPOY</button>
+    </div>
+
+    <div id="taskList"></div>
+</main>
+
+<script>
+    
+  // Data state to keep track of tasks
+let tasks = [];
+
+function addTask() {
+    const input = document.getElementById('taskInput');
+    const priority = document.getElementById('priority').value;
+    const taskText = input.value.trim();
+
+    if (taskText === "") {
+        alert("Please enter a task!");
+        return;
+    }
+
+    // Create a task object
+    const task = {
+        id: Date.now(),
+        text: taskText,
+        priority: priority,
+        completed: false
+    };
+
+    tasks.push(task);
+    input.value = ""; // Clear input
+    renderTasks();
+    updateStats();
+}
+
+function toggleTask(id) {
+    tasks = tasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t);
+    renderTasks();
+    updateStats();
+}
+
+function renderTasks() {
+    const list = document.getElementById('taskList');
+    list.innerHTML = "";
+
+    tasks.forEach(task => {
+        const row = document.createElement('div');
+        row.className = 'task-row';
+        row.innerHTML = `
+            <div class="task-left">
+                <div class="check-box ${task.completed ? 'done' : ''}" onclick="toggleTask(${task.id})">
+                    ${task.completed ? '<i class="fa-solid fa-check"></i>' : ''}
+                </div>
+                <span class="task-text ${task.completed ? 'done' : ''}">${task.text}</span>
+            </div>
+            <span class="badge ${task.priority}">${task.priority.toUpperCase()}</span>
+        `;
+        list.appendChild(row);
+    });
+}
+
+function updateStats() {
+    const total = tasks.length;
+    const completed = tasks.filter(t => t.completed).length;
+    const highPriority = tasks.filter(t => t.priority === 'high').length;
+    const rate = total === 0 ? 0 : Math.round((completed / total) * 100);
+
+    document.getElementById('totalTasks').innerText = total;
+    document.getElementById('rate').innerText = rate + "%";
+    document.getElementById('highCount').innerText = highPriority;
+}
+
+// Sidebar navigation logic (Your existing code with a small fix)
+document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', function() {
+        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+        this.classList.add('active');
+
+        const mainTitle = document.querySelector('.header h2');
+        const container = document.getElementById('taskList');
+        const statsGrid = document.querySelector('.grid');
+        const inputArea = document.querySelector('.input-section');
+
+        if (this.innerText.includes('Projects')) {
+            mainTitle.innerText = "Project Workspaces";
+            statsGrid.style.display = "none";
+            inputArea.style.display = "none";
+            container.innerHTML = `
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; width: 100%;">
+                    <div style="background: #161b2c; padding: 30px; border-radius: 20px; border: 1px dashed #6366f1; text-align: center;">
+                        <i class="fa-solid fa-folder-plus" style="font-size: 30px; color: #6366f1; margin-bottom: 15px;"></i>
+                        <h4>Web Development</h4>
+                        <p style="font-size: 12px; color: #9ca3af;">Click to initialize project</p>
+                    </div>
+                    <div style="background: #161b2c; padding: 30px; border-radius: 20px; border: 1px dashed #6366f1; text-align: center;">
+                        <i class="fa-solid fa-folder-plus" style="font-size: 30px; color: #6366f1; margin-bottom: 15px;"></i>
+                        <h4>UI/UX Design</h4>
+                        <p style="font-size: 12px; color: #9ca3af;">Click to initialize project</p>
+                    </div>
+                </div>`;
+        } else if (this.innerText.includes('Performance')) {
+            mainTitle.innerText = "Efficiency Analytics";
+            statsGrid.style.display = "none";
+            inputArea.style.display = "none";
+            container.innerHTML = `
+                <div style="text-align: center; padding: 60px; background: #161b2c; border-radius: 24px;">
+                    <i class="fa-solid fa-chart-area" style="font-size: 50px; color: #6366f1; margin-bottom: 20px;"></i>
+                    <h3>Performance Reports</h3>
+                    <p style="color: #9ca3af; margin-bottom: 20px;">Detailed metrics will appear after activity.</p>
+                </div>`;
+        } else {
+            // Restore Overview
+            mainTitle.innerText = "Control Center";
+            statsGrid.style.display = "grid";
+            inputArea.style.display = "flex";
+            renderTasks();
+            updateStats();
+        }
+    });
+});
+   </script>
+
+</body>
+</html>
